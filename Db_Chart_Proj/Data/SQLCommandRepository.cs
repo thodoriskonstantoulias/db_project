@@ -4,9 +4,7 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
-using System.Globalization;
-using System.Linq;
-using System.Web;
+using System.Web.Mvc;
 
 namespace Db_Chart_Proj.Data
 {
@@ -14,14 +12,16 @@ namespace Db_Chart_Proj.Data
     {
         private readonly List<Labor> laborList;
         private readonly List<MobLandUsage> usageList;
+        private readonly List<SelectListItem> countries;
         private string CS = ConfigurationManager.ConnectionStrings["DBCS"].ConnectionString;
         public SQLCommandRepository()
         {
             laborList = new List<Labor>();
             usageList = new List<MobLandUsage>();
+            countries = new List<SelectListItem>();
         }
 
-        public List<Labor> GetUnemploymentRateForSelectedCountry(int id)
+        public IEnumerable<Labor> GetUnemploymentRateForSelectedCountry(int id)
         {
             using (SqlConnection con = new SqlConnection(CS))
             {
@@ -38,14 +38,14 @@ namespace Db_Chart_Proj.Data
                         Oid = reader[1].ToString(),
                         Year = Convert.ToInt32(reader[2]),
                         Description = reader[3].ToString(),
-                        Value = float.Parse(reader[4].ToString(), CultureInfo.InvariantCulture.NumberFormat)
+                        Value = float.Parse(reader[4].ToString())
                     });
                 }
             }
             return laborList;
         }
 
-        public List<MobLandUsage> GetMobileVsLandlineUsageForSelectedCountry(int id)
+        public IEnumerable<MobLandUsage> GetMobileVsLandlineUsageForSelectedCountry(int id)
         {
             using (SqlConnection con = new SqlConnection(CS))
             {
@@ -59,12 +59,28 @@ namespace Db_Chart_Proj.Data
                     usageList.Add(new MobLandUsage
                     {
                         Year = Convert.ToInt32(reader[0]),
-                        MobileValue = float.Parse(reader[1].ToString(), CultureInfo.InvariantCulture.NumberFormat),
-                        LandlineValue = float.Parse(reader[2].ToString(), CultureInfo.InvariantCulture.NumberFormat)
+                        MobileValue = float.Parse(reader[1].ToString()),
+                        LandlineValue = float.Parse(reader[2].ToString())
                     });
                 }
             }
             return usageList;
+        }
+
+        public IEnumerable<SelectListItem> GetAllCountries() 
+        {
+            using (SqlConnection con = new SqlConnection(CS))
+            {
+                SqlCommand cmd = new SqlCommand("spGetAllCountries", con);
+                cmd.CommandType = CommandType.StoredProcedure;
+                con.Open();
+                SqlDataReader reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    countries.Add(new SelectListItem { Text = reader[1].ToString(), Value = reader[0].ToString() });
+                }
+            }
+            return countries;
         }
     }
 }
