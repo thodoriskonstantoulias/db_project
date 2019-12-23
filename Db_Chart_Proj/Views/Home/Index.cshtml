@@ -1,0 +1,137 @@
+﻿@model IEnumerable<SelectListItem>
+@{
+	ViewBag.Title = "Home Page";
+}
+
+<br />
+<select class="form-control" id="js-drop">
+	@foreach (var country in Model)
+	{
+		<option value=@country.Value>@country.Text</option>
+	}
+</select>
+<br />
+<div>
+	<button id="js-unemployment-btn" class="btn btn-primary">Show Unemployment Rate Chart</button>
+</div>
+<br />
+<div>
+	<button id="js-phone-usage-btn" class="btn btn-primary">Show Mobile and Landline Usage</button>
+</div>
+<h4 class="text-danger js-no-country-data"></h4>
+
+@section scripts
+{
+	<script src="https://code.highcharts.com/highcharts.js"></script>
+	<script src="https://code.highcharts.com/modules/exporting.js"></script>
+	<script src="https://code.highcharts.com/modules/export-data.js"></script>
+	<script src="https://code.highcharts.com/modules/accessibility.js"></script>
+
+	<figure class="highcharts-figure">
+		<div id="container"></div>
+	</figure>
+	<script>
+		$(document).ready(function () {					
+			
+			$("#js-unemployment-btn").click(function () {	
+				var dropdown = document.getElementById("js-drop")
+			    var id = dropdown.options[dropdown.selectedIndex].value;	
+				var years = [];
+		    	var unRate = [];
+				$.getJSON("/api/chart/" + id, function (data) {
+					$(".js-no-country-data").text("");
+					if (data.length == 0) {
+						$(".js-no-country-data").text("No data for selected country");
+						return;
+					}
+					for (i = 0; i < data.length; i++) {
+						years.push(data[i].Year);
+						unRate.push(data[i].Value);
+					}
+					Highcharts.chart('container', {
+						chart: {
+							type: 'line'
+						},
+						title: {
+							text: 'Unemployment Rate'
+						},
+						xAxis: {
+							categories: years
+						},
+						yAxis: {
+							title: {
+								text: 'Unemployment Rate'
+							}
+						},
+						plotOptions: {
+							line: {
+								dataLabels: {
+									enabled: true
+								},
+								enableMouseTracking: false
+							}
+						},
+						series: [{
+							name: 'Rate',
+							data: unRate
+						}]
+					});
+				});
+			});
+
+			$("#js-phone-usage-btn").click(function () {	
+				var dropdown = document.getElementById("js-drop")
+			    var id = dropdown.options[dropdown.selectedIndex].value;	
+				var years = [];
+		    	var mobileUsage = [];
+				var landlineUsage = [];
+				$.getJSON("/api/mobtelusage/" + id, function (data) {
+					$(".js-no-country-data").text("");
+					if (data.length == 0) {
+						$(".js-no-country-data").text("No data for selected country");
+						return;
+					}
+					for (i = 0; i < data.length; i++) {
+						years.push(data[i].Year);
+						mobileUsage.push(data[i].MobileValue);
+						landlineUsage.push(data[i].LandlineValue);
+					}
+					Highcharts.chart('container', {
+						chart: {
+							type: 'line'
+						},
+						title: {
+							text: 'Mobile vs Landline Usage'
+						},
+						subtitle: {
+							text : 'No need to measure internet usage because it was percentage'
+						},
+						xAxis: {
+							categories: years
+						},
+						yAxis: {
+							title: {
+								text: 'Usage'
+							}
+						},
+						plotOptions: {
+							line: {
+								dataLabels: {
+									enabled: true
+								},
+								enableMouseTracking: false
+							}
+						},
+						series: [{
+							name: 'Mobile Usage',
+							data: mobileUsage
+						},{
+							name: 'Landline Usage',
+							data: landlineUsage
+						}]
+					});
+				});
+			});
+		});
+	</script>
+}
